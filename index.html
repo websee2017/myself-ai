@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MyAI Login</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0f172a;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.box{
+  width:360px;
+  background:#1e293b;
+  padding:30px;
+  border-radius:12px;
+}
+
+input{
+  width:100%;
+  padding:12px;
+  margin:10px 0;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#2563eb;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+
+.link{
+  margin-top:10px;
+  text-align:center;
+  color:#93c5fd;
+  cursor:pointer;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>MyAI Login</h2>
+
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+
+  <div class="link" onclick="forgotPassword()">
+    Forgot Password?
+  </div>
+</div>
+
+<script>
+
+const sb = supabase.createClient(
+  "https://zfdbptikvcyhrqtqdkxj.supabase.co",
+  "sb_publishable_Jr7ICxOpjLZP78Ogwuwrcg_OBRE5eeG"
+);
+
+// 自动跳转
+check();
+
+async function check(){
+  const { data:{session} } = await sb.auth.getSession();
+  if(session){
+    window.location.href="chat.html";
+  }
+}
+
+// 登录
+async function login(){
+
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { error } = await sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  window.location.href="chat.html";
+}
+
+// 忘记密码（核心新增）
+async function forgotPassword(){
+
+  const email = document.getElementById("email").value;
+
+  if(!email){
+    alert("Please enter your email first");
+    return;
+  }
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://myai.hippo1996.top/change-password.html"
+  });
+
+  if(error){
+    alert(error.message);
+  } else {
+    alert("Password reset email sent! Please check your inbox.");
+  }
+}
+
+</script>
+
+</body>
+</html>

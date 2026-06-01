@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MyAI Vision Chat</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  display: flex;
+  height: 100vh;
+}
+
+#sidebar {
+  width: 220px;
+  background: #111;
+  color: white;
+  padding: 10px;
+}
+
+#sidebar button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+#chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#topBar {
+  padding: 10px;
+  background: #f3f4f6;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.msg {
+  margin: 6px 0;
+  padding: 8px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+
+.user { background: #dbeafe; text-align: right; }
+.ai { background: #eee; }
+
+#inputBox {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+}
+
+#input {
+  flex: 1;
+  padding: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="sidebar">
+  <h3>MyAI Vision</h3>
+
+  <button onclick="location.href='change-password.html'">
+    Change Password
+  </button>
+
+  <button onclick="logout()">
+    Logout
+  </button>
+</div>
+
+<div id="chat">
+
+  <div id="topBar">
+    <select id="modelSelect">
+      <option value="openai/gpt-4o">GPT-4o Vision</option>
+      <option value="anthropic/claude-sonnet-4.5">Claude 4.5 Vision</option>
+    </select>
+
+    <input type="file" id="imageInput" accept="image/*">
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="inputBox">
+    <input id="input" placeholder="Ask anything or upload image..."
+      onkeydown="if(event.key==='Enter') send()">
+    <button onclick="send()">Send</button>
+  </div>
+
+</div>
+
+<script>
+
+const sb = window.supabase.createClient(
+  "https://zfdbptikvcyhrqtqdkxj.supabase.co",
+  "sb_publishable_Jr7ICxOpjLZP78Ogwuwrcg_OBRE5eeG"
+);
+
+let msgCounter = 0;
+let currentUser = null;
+
+async function checkLogin() {
+  const { data: { user } } = await sb.auth.getUser();
+
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  currentUser = user;
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  window.location.href = "index.html";
+}
+
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function send() {
+
+  const text = document.getElementById("input").value.trim();
+  const file = document.getElementById("imageInput").files[0];
+  const model = document.getElementById("modelSelect").value;
+
+  if (!text && !file) return;
+
+  document.getElementById("input").value = "";
+
+  let image = null;
+
+  if (file) {
+    image = await toBase64(file);
+  }
+
+  addMessage("user", text || "[Image]");
+
+  const loadingId = addMessage("ai", "Thinking...");
+
+  try {
+
+    const res = await fetch("https://api.hippo1996.top", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        image: image,
+        model: model,
+        user_id: currentUser?.id
+      })
+    });
+
+    const data = await res.json();
+
+    const reply = data?.reply || "No response";
+
+    updateMessage(loadingId, reply);
+
+    document.getElementById("imageInput").value = "";
+
+  } catch (err) {
+    updateMessage(loadingId, "Error: " + err.message);
+  }
+}
+
+function addMessage(role, text) {
+
+  const id = "msg_" + (++msgCounter);
+
+  const div = document.createElement("div");
+  div.className = "msg " + (role === "user" ? "user" : "ai");
+  div.id = id;
+  div.innerText = text;
+
+  document.getElementById("messages").appendChild(div);
+
+  document.getElementById("messages").scrollTop =
+    document.getElementById("messages").scrollHeight;
+
+  return id;
+}
+
+function updateMessage(id, text) {
+  document.getElementById(id).innerText = text;
+}
+
+checkLogin();
+
+</script>
+
+</body>
+</html>
