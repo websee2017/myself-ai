@@ -13,8 +13,14 @@
 
 <body>
 
+<!-- ===== 侧边栏 ===== -->
 <div id="sidebar">
+
   <h3>🧠 MyAI</h3>
+
+  <button onclick="newChat()">
+    + New Chat
+  </button>
 
   <button onclick="location.href='change-password.html'">
     Change Password
@@ -23,10 +29,13 @@
   <button onclick="logout()">
     Logout
   </button>
+
 </div>
 
+<!-- ===== 主聊天区 ===== -->
 <div id="chat">
 
+  <!-- 顶部工具栏 -->
   <div id="topBar">
 
     <select id="modelSelect">
@@ -38,8 +47,10 @@
 
   </div>
 
+  <!-- 消息区域 -->
   <div id="messages"></div>
 
+  <!-- 输入区域 -->
   <div id="inputBox">
 
     <input
@@ -47,12 +58,15 @@
       placeholder="Ask anything..."
       onkeydown="handleKey(event)">
 
-    <button onclick="send()">Send</button>
+    <button onclick="send()">
+      Send
+    </button>
 
   </div>
 
 </div>
 
+<!-- ===== 核心逻辑 ===== -->
 <script src="app.js"></script>
 
 </body>

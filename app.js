@@ -3,8 +3,10 @@ const sb = window.supabase.createClient(
   "sb_publishable_Jr7ICxOpjLZP78Ogwuwrcg_OBRE5eeG"
 );
 
-let msgCounter = 0;
 let currentUser = null;
+
+// ===== 读取聊天记录 =====
+let chatHistory = loadChat();
 
 // ===== 登录检查 =====
 async function checkLogin() {
@@ -16,18 +18,20 @@ async function checkLogin() {
   }
 
   currentUser = user;
+
+  // 恢复历史消息
+  renderHistory();
 }
 
-// 自动执行
 checkLogin();
 
-// ===== 登出 =====
+// ===== logout =====
 async function logout() {
   await sb.auth.signOut();
   window.location.href = "index.html";
 }
 
-// ===== 回车发送 =====
+// ===== Enter发送 =====
 function handleKey(event) {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
@@ -35,7 +39,7 @@ function handleKey(event) {
   }
 }
 
-// ===== Base64图片转换 =====
+// ===== Base64 =====
 function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -47,34 +51,59 @@ function toBase64(file) {
 
 // ===== 添加消息 =====
 function addMessage(role, text) {
-  const id = "msg_" + (++msgCounter);
-
   const div = document.createElement("div");
   div.className = "msg " + (role === "user" ? "user" : "ai");
-  div.id = id;
-
   div.innerText = text;
 
   document.getElementById("messages").appendChild(div);
-
   scrollToBottom();
-
-  return id;
 }
 
-// ===== 更新消息 =====
-function updateMessage(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.innerText = text;
-}
-
-// ===== 滚动到底部 =====
+// ===== 滚动 =====
 function scrollToBottom() {
   const box = document.getElementById("messages");
   box.scrollTop = box.scrollHeight;
 }
 
-// ===== 发送消息（核心） =====
+// ===== 保存 =====
+function saveChat() {
+
+  // 只保留最近20轮（40条消息）
+  if (chatHistory.length > 40) {
+    chatHistory = chatHistory.slice(chatHistory.length - 40);
+  }
+
+  localStorage.setItem(
+    "myai_chat",
+    JSON.stringify(chatHistory)
+  );
+}
+
+// ===== 读取 =====
+function loadChat() {
+  const data = localStorage.getItem("myai_chat");
+  return data ? JSON.parse(data) : [];
+}
+
+// ===== 渲染历史 =====
+function renderHistory() {
+  const box = document.getElementById("messages");
+  box.innerHTML = "";
+
+  chatHistory.forEach(msg => {
+    addMessage(msg.role, msg.text);
+  });
+}
+
+// ===== New Chat =====
+function newChat() {
+  chatHistory = [];
+  localStorage.removeItem("myai_chat");
+
+  document.getElementById("messages").innerHTML = "";
+}
+
+// ===== 发送 =====
 async function send() {
 
   const input = document.getElementById("input");
@@ -90,16 +119,27 @@ async function send() {
 
   let image = null;
 
-  // ===== 图片处理 =====
   if (file) {
     image = await toBase64(file);
   }
 
-  // 显示用户消息
+  // user message
   addMessage("user", text || "[Image]");
 
+  chatHistory.push({
+    role: "user",
+    text: text || "[Image]"
+  });
+
+  saveChat();
+
   // AI loading
-  const loadingId = addMessage("ai", "Thinking...");
+  const loadingDiv = document.createElement("div");
+  loadingDiv.className = "msg ai";
+  loadingDiv.innerText = "Thinking...";
+  document.getElementById("messages").appendChild(loadingDiv);
+
+  scrollToBottom();
 
   try {
 
@@ -112,7 +152,8 @@ async function send() {
         message: text,
         image: image,
         model: model,
-        user_id: currentUser?.id
+        user_id: currentUser?.id,
+        context: chatHistory.slice(-20)
       })
     });
 
@@ -120,12 +161,18 @@ async function send() {
 
     const reply = data?.reply || "No response";
 
-    updateMessage(loadingId, reply);
+    loadingDiv.innerText = reply;
+
+    chatHistory.push({
+      role: "ai",
+      text: reply
+    });
+
+    saveChat();
 
   } catch (err) {
-    updateMessage(loadingId, "Error: " + err.message);
+    loadingDiv.innerText = "Error: " + err.message;
   }
 
-  // 清空图片
   fileInput.value = "";
 }
