@@ -13,14 +13,15 @@
 
 <body>
 
-<!-- ===== 侧边栏 ===== -->
+<!-- 固定 sidebar（不再被JS完全重写） -->
 <div id="sidebar">
 
-  <h3>🧠 MyAI</h3>
+  <div class="side-header">
+    <h3>🧠 MyAI</h3>
+    <button onclick="newChat()">+ New Chat</button>
+  </div>
 
-  <button onclick="newChat()">
-    + New Chat
-  </button>
+  <div id="chatList"></div>
 
   <button onclick="location.href='change-password.html'">
     Change Password
@@ -32,10 +33,9 @@
 
 </div>
 
-<!-- ===== 主聊天区 ===== -->
+<!-- 主区域 -->
 <div id="chat">
 
-  <!-- 顶部工具栏 -->
   <div id="topBar">
 
     <select id="modelSelect">
@@ -47,10 +47,8 @@
 
   </div>
 
-  <!-- 消息区域 -->
   <div id="messages"></div>
 
-  <!-- 输入区域 -->
   <div id="inputBox">
 
     <input
@@ -58,15 +56,12 @@
       placeholder="Ask anything..."
       onkeydown="handleKey(event)">
 
-    <button onclick="send()">
-      Send
-    </button>
+    <button onclick="send()">Send</button>
 
   </div>
 
 </div>
 
-<!-- ===== 核心逻辑 ===== -->
 <script src="app.js"></script>
 
 </body>

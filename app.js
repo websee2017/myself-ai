@@ -5,11 +5,11 @@ const sb = window.supabase.createClient(
 
 let currentUser = null;
 
-// ===== 多会话数据 =====
-let sessions = loadSessions();
+let sessions = [];
 let currentChatId = null;
 
-// ===== 登录 =====
+/* -------------------- 登录检查 -------------------- */
+
 async function checkLogin() {
   const { data: { user } } = await sb.auth.getUser();
 
@@ -20,7 +20,8 @@ async function checkLogin() {
 
   currentUser = user;
 
-  // 没有会话就创建一个
+  sessions = loadSessions();
+
   if (sessions.length === 0) {
     createNewChat();
   } else {
@@ -33,31 +34,26 @@ async function checkLogin() {
 
 checkLogin();
 
-// ===== 获取当前会话 =====
-function getCurrentChat() {
-  return sessions.find(s => s.id === currentChatId);
-}
+/* -------------------- 会话管理 -------------------- */
 
-// ===== New Chat（关键修复） =====
-function newChat() {
+function createNewChat() {
 
-  const id = "chat_" + Date.now();
+  const chatId = "chat_" + Date.now();
 
-  const newSession = {
-    id,
+  const chat = {
+    id: chatId,
     title: "New Chat",
     messages: [],
     updatedAt: Date.now()
   };
 
-  sessions.unshift(newSession);
+  sessions.unshift(chat);
 
-  // 最多20个会话
   if (sessions.length > 20) {
     sessions = sessions.slice(0, 20);
   }
 
-  currentChatId = id;
+  currentChatId = chatId;
 
   saveSessions();
 
@@ -65,184 +61,310 @@ function newChat() {
   renderMessages();
 }
 
-// ===== 选择会话 =====
-function switchChat(id) {
-  currentChatId = id;
+function newChat() {
+  createNewChat();
+}
+
+function switchChat(chatId) {
+
+  currentChatId = chatId;
+
+  renderSidebar();
   renderMessages();
 }
 
-// ===== sidebar渲染 =====
-function renderSidebar() {
-
-  const sidebar = document.getElementById("sidebar");
-
-  let html = `
-    <h3>🧠 MyAI</h3>
-    <button onclick="newChat()">+ New Chat</button>
-    <button onclick="location.href='change-password.html'">Change Password</button>
-    <button onclick="logout()">Logout</button>
-    <hr style="margin:10px 0;opacity:.2;">
-  `;
-
-  sessions.forEach(s => {
-    html += `
-      <div onclick="switchChat('${s.id}')"
-        style="
-          padding:8px;
-          cursor:pointer;
-          border-radius:8px;
-          margin-bottom:6px;
-          background:${s.id === currentChatId ? '#2563eb' : '#1f2937'};
-        ">
-        ${s.title}
-      </div>
-    `;
-  });
-
-  sidebar.innerHTML = html;
+function getCurrentChat() {
+  return sessions.find(
+    s => s.id === currentChatId
+  );
 }
 
-// ===== 渲染聊天 =====
+/* -------------------- localStorage -------------------- */
+
+function saveSessions() {
+
+  localStorage.setItem(
+    "myai_sessions",
+    JSON.stringify(sessions)
+  );
+}
+
+function loadSessions() {
+
+  const data =
+    localStorage.getItem("myai_sessions");
+
+  if (!data) return [];
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+/* -------------------- Sidebar -------------------- */
+
+function renderSidebar() {
+
+  const chatList =
+    document.getElementById("chatList");
+
+  if (!chatList) return;
+
+  chatList.innerHTML = "";
+
+  sessions.forEach(chat => {
+
+    const div =
+      document.createElement("div");
+
+    div.className = "chat-item";
+
+    div.innerText = chat.title;
+
+    if (chat.id === currentChatId) {
+      div.classList.add("active");
+    }
+
+    div.onclick = () => {
+      switchChat(chat.id);
+    };
+
+    chatList.appendChild(div);
+  });
+}
+
+/* -------------------- Messages -------------------- */
+
 function renderMessages() {
 
-  const box = document.getElementById("messages");
+  const box =
+    document.getElementById("messages");
+
+  if (!box) return;
+
   box.innerHTML = "";
 
   const chat = getCurrentChat();
+
   if (!chat) return;
 
-  chat.messages.forEach(m => {
-    addMessageUI(m.role, m.text);
+  chat.messages.forEach(msg => {
+
+    const div =
+      document.createElement("div");
+
+    div.className =
+      "msg " +
+      (msg.role === "user"
+        ? "user"
+        : "ai");
+
+    div.innerText = msg.text;
+
+    box.appendChild(div);
   });
 
   scrollToBottom();
 }
 
-// ===== UI消息 =====
 function addMessageUI(role, text) {
 
-  const div = document.createElement("div");
-  div.className = "msg " + (role === "user" ? "user" : "ai");
+  const div =
+    document.createElement("div");
+
+  div.className =
+    "msg " +
+    (role === "user"
+      ? "user"
+      : "ai");
+
   div.innerText = text;
 
-  document.getElementById("messages").appendChild(div);
+  document
+    .getElementById("messages")
+    .appendChild(div);
+
+  scrollToBottom();
+
+  return div;
 }
 
-// ===== 保存 =====
-function saveSessions() {
-  localStorage.setItem("myai_sessions", JSON.stringify(sessions));
-}
-
-// ===== 读取 =====
-function loadSessions() {
-  const data = localStorage.getItem("myai_sessions");
-  return data ? JSON.parse(data) : [];
-}
-
-// ===== scroll =====
 function scrollToBottom() {
-  const box = document.getElementById("messages");
-  box.scrollTop = box.scrollHeight;
+
+  const box =
+    document.getElementById("messages");
+
+  box.scrollTop =
+    box.scrollHeight;
 }
 
-// ===== Enter =====
-function handleKey(e) {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
+/* -------------------- Enter发送 -------------------- */
+
+function handleKey(event) {
+
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey
+  ) {
+    event.preventDefault();
     send();
   }
 }
 
-// ===== Base64 =====
+/* -------------------- 图片处理 -------------------- */
+
 function toBase64(file) {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
-  });
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const reader =
+        new FileReader();
+
+      reader.onload = () =>
+        resolve(reader.result);
+
+      reader.onerror = reject;
+
+      reader.readAsDataURL(file);
+    }
+  );
 }
 
-// ===== logout =====
+/* -------------------- Logout -------------------- */
+
 async function logout() {
+
   await sb.auth.signOut();
-  window.location.href = "index.html";
+
+  window.location.href =
+    "index.html";
 }
 
-// ===== send =====
+/* -------------------- Send -------------------- */
+
 async function send() {
 
-  const input = document.getElementById("input");
-  const fileInput = document.getElementById("imageInput");
-  const model = document.getElementById("modelSelect").value;
+  const input =
+    document.getElementById("input");
 
-  const text = input.value.trim();
-  const file = fileInput.files[0];
+  const imageInput =
+    document.getElementById("imageInput");
+
+  const model =
+    document.getElementById("modelSelect")
+      .value;
+
+  const text =
+    input.value.trim();
+
+  const file =
+    imageInput.files[0];
 
   if (!text && !file) return;
 
   input.value = "";
 
   let image = null;
-  if (file) image = await toBase64(file);
+
+  if (file) {
+    image = await toBase64(file);
+  }
 
   const chat = getCurrentChat();
+
   if (!chat) return;
 
-  // ===== user msg =====
+  /* 用户消息 */
+
+  const userText =
+    text || "[Image]";
+
   chat.messages.push({
     role: "user",
-    text: text || "[Image]"
+    text: userText
   });
 
-  // 限制 30轮上下文（60条消息）
+  if (
+    chat.title === "New Chat" &&
+    text
+  ) {
+    chat.title =
+      text.substring(0, 25);
+  }
+
   if (chat.messages.length > 60) {
-    chat.messages = chat.messages.slice(-60);
+    chat.messages =
+      chat.messages.slice(-60);
   }
 
   saveSessions();
+
+  renderSidebar();
   renderMessages();
 
-  // AI loading
-  const loadingId = document.createElement("div");
-  loadingId.className = "msg ai";
-  loadingId.innerText = "Thinking...";
-  document.getElementById("messages").appendChild(loadingId);
-
-  scrollToBottom();
+  const loadingDiv =
+    addMessageUI(
+      "ai",
+      "Thinking..."
+    );
 
   try {
 
-    const res = await fetch("https://api.hippo1996.top", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        image: image,
-        model: model,
-        context: chat.messages.slice(-60),
-        user_id: currentUser?.id
-      })
-    });
+    const res =
+      await fetch(
+        "https://api.hippo1996.top",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            message: text,
+            image: image,
+            model: model,
+            context:
+              chat.messages.slice(-60),
+            user_id:
+              currentUser?.id
+          })
+        }
+      );
 
-    const data = await res.json();
+    const data =
+      await res.json();
 
-    const reply = data?.reply || "No response";
+    const reply =
+      data.reply ||
+      "No response";
+
+    loadingDiv.innerText =
+      reply;
 
     chat.messages.push({
       role: "ai",
       text: reply
     });
 
-    chat.updatedAt = Date.now();
+    if (
+      chat.messages.length > 60
+    ) {
+      chat.messages =
+        chat.messages.slice(-60);
+    }
 
     saveSessions();
+
     renderMessages();
-    renderSidebar();
 
   } catch (err) {
-    loadingId.innerText = "Error: " + err.message;
+
+    loadingDiv.innerText =
+      "Error: " + err.message;
   }
 
-  fileInput.value = "";
+  imageInput.value = "";
 }
