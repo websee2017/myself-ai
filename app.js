@@ -368,3 +368,29 @@ async function send() {
 
   imageInput.value = "";
 }
+
+// ===== 模型显示 =====
+
+const modelSelect =
+  document.getElementById("modelSelect");
+
+if (modelSelect) {
+
+  modelSelect.addEventListener("change", () => {
+
+    const currentModel =
+      document.getElementById("currentModel");
+
+    if (currentModel) {
+
+      currentModel.textContent =
+        "Current Model: " +
+        modelSelect.options[
+          modelSelect.selectedIndex
+        ].text;
+
+    }
+
+  });
+
+}

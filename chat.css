@@ -296,3 +296,16 @@ body{
 .chat-item.active{
   background:#2563eb;
 }
+
+#currentModel{
+  background:#1f2937;
+  color:#e5e7eb;
+
+  padding:6px 12px;
+
+  border-radius:999px;
+
+  font-size:13px;
+
+  border:1px solid rgba(255,255,255,0.08);
+}
