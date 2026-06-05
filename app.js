@@ -73,6 +73,41 @@ function switchChat(chatId) {
   renderMessages();
 }
 
+function deleteChat(chatId) {
+
+  const ok = confirm(
+    "Delete this conversation?"
+  );
+
+  if (!ok) return;
+
+  sessions = sessions.filter(
+    s => s.id !== chatId
+  );
+
+  if (currentChatId === chatId) {
+
+    if (sessions.length > 0) {
+
+      currentChatId =
+        sessions[0].id;
+
+    } else {
+
+      createNewChat();
+      return;
+
+    }
+
+  }
+
+  saveSessions();
+
+  renderSidebar();
+  renderMessages();
+
+}
+
 function getCurrentChat() {
   return sessions.find(
     s => s.id === currentChatId
@@ -116,23 +151,47 @@ function renderSidebar() {
 
   sessions.forEach(chat => {
 
-    const div =
+    const item =
       document.createElement("div");
 
-    div.className = "chat-item";
-
-    div.innerText = chat.title;
+    item.className = "chat-item";
 
     if (chat.id === currentChatId) {
-      div.classList.add("active");
+      item.classList.add("active");
     }
 
-    div.onclick = () => {
+    const title =
+      document.createElement("span");
+
+    title.textContent = chat.title;
+
+    title.onclick = () => {
       switchChat(chat.id);
     };
 
-    chatList.appendChild(div);
+    const delBtn =
+      document.createElement("button");
+
+    delBtn.className =
+      "delete-chat";
+
+    delBtn.innerHTML = "🗑";
+
+    delBtn.onclick = (e) => {
+
+      e.stopPropagation();
+
+      deleteChat(chat.id);
+
+    };
+
+    item.appendChild(title);
+    item.appendChild(delBtn);
+
+    chatList.appendChild(item);
+
   });
+
 }
 
 /* -------------------- Messages -------------------- */

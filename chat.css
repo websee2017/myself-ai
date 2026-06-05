@@ -309,3 +309,36 @@ body{
 
   border:1px solid rgba(255,255,255,0.08);
 }
+
+/* ===== 删除会话按钮 ===== */
+
+.delete-chat{
+
+  background:none !important;
+
+  border:none !important;
+
+  color:#9ca3af;
+
+  cursor:pointer;
+
+  font-size:14px;
+
+  width:auto !important;
+
+  padding:0 4px !important;
+}
+
+.delete-chat:hover{
+
+  color:#ef4444;
+}
+
+/* ===== 会话项目布局 ===== */
+
+.chat-item{
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
