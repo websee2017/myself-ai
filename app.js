@@ -149,7 +149,7 @@ function renderSidebar() {
 
   chatList.innerHTML = "";
 
-  sessions.forEach(chat => {
+  sessions.forEach((chat, index) => {
 
     const item =
       document.createElement("div");
@@ -163,7 +163,8 @@ function renderSidebar() {
     const title =
       document.createElement("span");
 
-    title.textContent = chat.title;
+    title.textContent =
+      "Chat " + (index + 1);
 
     title.onclick = () => {
       switchChat(chat.id);
@@ -176,6 +177,9 @@ function renderSidebar() {
       "delete-chat";
 
     delBtn.innerHTML = "🗑";
+
+    delBtn.title =
+      "Delete Chat";
 
     delBtn.onclick = (e) => {
 
@@ -345,15 +349,7 @@ async function send() {
     role: "user",
     text: userText
   });
-
-  if (
-    chat.title === "New Chat" &&
-    text
-  ) {
-    chat.title =
-      text.substring(0, 25);
-  }
-
+  
   if (chat.messages.length > 60) {
     chat.messages =
       chat.messages.slice(-60);
