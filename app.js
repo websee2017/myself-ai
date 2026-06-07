@@ -276,6 +276,14 @@ function handleKey(event) {
   }
 }
 
+function autoResizeTextarea(el) {
+
+  el.style.height = "auto";
+
+  el.style.height =
+    el.scrollHeight + "px";
+}
+
 /* -------------------- 图片处理 -------------------- */
 
 function toBase64(file) {
@@ -447,5 +455,19 @@ if (modelSelect) {
     }
 
   });
+
+}
+
+const inputBox =
+  document.getElementById("input");
+
+if (inputBox) {
+
+  inputBox.addEventListener(
+    "input",
+    function () {
+      autoResizeTextarea(this);
+    }
+  );
 
 }

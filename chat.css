@@ -143,6 +143,14 @@ body{
   color:white;
 
   outline:none;
+
+  resize:none;
+
+  min-height:44px;
+  max-height:160px;
+
+  overflow-y:auto;
+  line-height:1.4;
 }
 
 #input::placeholder{
